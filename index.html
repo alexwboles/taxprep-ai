@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TaxPrep AI — Tax season, minus the shoebox</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <h1>🧾 TaxPrep AI</h1>
+    <p class="tagline">Tell it your situation. Get your personalized document checklist, vault tracker, and deadline countdowns.</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="disclaimer">
+    ⚠️ <strong>General guidance only — not tax advice.</strong> Deadlines shown are recurring U.S. federal dates;
+    your state dates and holiday shifts may differ. When in doubt, ask a tax professional.
+  </div>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>Your tax situation</h2>
+      <button id="resetBtn" class="btn ghost danger">Reset vault</button>
+    </div>
+    <p class="muted">Pick everything that applies — your checklist merges automatically.</p>
+    <div id="sitBox" class="sit-grid"></div>
+  </section>
+
+  <section class="card">
+    <h2>Deadline countdown</h2>
+    <div id="deadlines" class="dl-grid"></div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>Document vault</h2>
+      <span id="progText" class="pill">0 of 0 documents ready</span>
+    </div>
+    <div class="prog-bar"><div id="progFill" class="prog-fill"></div></div>
+    <p class="muted">Tap a document's status to cycle <strong>Missing → Received → N/A</strong>. Add notes like "in the filing cabinet" or "emailed accountant 3/2".</p>
+    <div id="checklist"></div>
+  </section>
+
+  <footer class="foot">
+    <p>🔒 100% local — your tax documents never leave this browser. Optional <code>OPENAI_API_KEY</code> may power future AI help; everything works without it.</p>
+  </footer>
+</main>
+
+<script src="js/tax.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
