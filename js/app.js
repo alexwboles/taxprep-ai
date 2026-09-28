@@ -22,6 +22,8 @@
     return s.filter(function (id) { return T.SITUATIONS[id]; });
   }
 
+  var SIT_CODES = { employee: 'W-2', freelancer: '1099', homeowner: 'HOME', investor: 'INV' };
+
   function renderSituations() {
     var box = el('sitBox');
     box.innerHTML = '';
@@ -40,6 +42,9 @@
         save(LS_SIT, cur.length ? cur : ['employee']);
         render();
       });
+      var code = document.createElement('span');
+      code.className = 'code';
+      code.textContent = SIT_CODES[id] || id.slice(0, 4).toUpperCase();
       var span = document.createElement('span');
       var strong = document.createElement('strong');
       strong.textContent = sit.label;
@@ -49,6 +54,7 @@
       span.appendChild(document.createElement('br'));
       span.appendChild(small);
       lab.appendChild(cb);
+      lab.appendChild(code);
       lab.appendChild(span);
       box.appendChild(lab);
     });

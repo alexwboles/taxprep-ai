@@ -7,45 +7,71 @@
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<header class="hero">
-  <div class="wrap">
-    <h1>TaxPrep AI</h1>
-    <p class="tagline">Tell it your situation. Get your personalized document checklist, vault tracker, and deadline countdowns.</p>
+
+<!-- ============ masthead: the filing office ============ -->
+<header class="masthead">
+  <div class="mast-inner">
+    <div class="mast-brand">
+      <span class="form-no">FORM TP-26</span>
+      <h1>TaxPrep <em>AI</em></h1>
+      <p class="mast-tag">Tax season, minus the shoebox. Pick your filing situation — the office builds your document checklist, tracks your vault, and counts down every federal deadline.</p>
+    </div>
+    <div class="mast-meta">
+      <div class="mast-stamp">FILED<br>LOCALLY</div>
+      <p class="mast-fine">100% local — nothing leaves this browser.</p>
+    </div>
   </div>
+  <div class="mast-rule"></div>
 </header>
 
-<main class="wrap">
-  <div class="disclaimer">
-    <strong>General guidance only — not tax advice.</strong> Deadlines shown are recurring U.S. federal dates;
-    your state dates and holiday shifts may differ. When in doubt, ask a tax professional.
-  </div>
+<main class="ledger">
 
-  <section class="card">
-    <div class="card-head">
-      <h2>Your tax situation</h2>
+  <p class="disclaimer"><strong>General guidance only — not tax advice.</strong> Deadlines shown are recurring U.S. federal dates; your state dates and holiday shifts may differ. When in doubt, ask a tax professional.</p>
+
+  <!-- ============ 1 · filing situation ============ -->
+  <section class="dossier">
+    <div class="dossier-head">
+      <div>
+        <p class="kicker">Step 1 · Filing profile</p>
+        <h2>Your tax situation</h2>
+        <p class="lede">Check everything that applies — your checklist merges automatically, shared documents counted once.</p>
+      </div>
       <button id="resetBtn" class="btn ghost danger">Reset vault</button>
     </div>
-    <p class="muted">Pick everything that applies — your checklist merges automatically.</p>
     <div id="sitBox" class="sit-grid"></div>
   </section>
 
-  <section class="card">
-    <h2>Deadline countdown</h2>
+  <!-- ============ 2 · deadlines ============ -->
+  <section class="dossier">
+    <div class="dossier-head">
+      <div>
+        <p class="kicker">Step 2 · The calendar</p>
+        <h2>Deadline countdown</h2>
+        <p class="lede">Every recurring federal deadline, with a live countdown. Anything inside 30 days gets stamped.</p>
+      </div>
+    </div>
     <div id="deadlines" class="dl-grid"></div>
   </section>
 
-  <section class="card">
-    <div class="card-head">
-      <h2>Document vault</h2>
+  <!-- ============ 3 · the vault ============ -->
+  <section class="dossier">
+    <div class="dossier-head">
+      <div>
+        <p class="kicker">Step 3 · Document vault</p>
+        <h2>Your documents</h2>
+        <p class="lede">Tap a document's stamp to cycle <strong>Missing → Received → N/A</strong>. Add notes like “in the filing cabinet” or “emailed accountant 3/2”.</p>
+      </div>
       <span id="progText" class="pill">0 of 0 documents ready</span>
     </div>
-    <div class="prog-bar"><div id="progFill" class="prog-fill"></div></div>
-    <p class="muted">Tap a document's status to cycle <strong>Missing → Received → N/A</strong>. Add notes like "in the filing cabinet" or "emailed accountant 3/2".</p>
+    <div class="vault-meter">
+      <div class="vault-meter-track"><div id="progFill" class="vault-meter-fill"></div></div>
+      <span class="vault-meter-cap">READINESS</span>
+    </div>
     <div id="checklist"></div>
   </section>
 
   <footer class="foot">
-    <p>100% local — your tax documents never leave this browser. Optional <code>OPENAI_API_KEY</code> may power future AI help; everything works without it.</p>
+    <p>TaxPrep AI · free &amp; open · your tax situation stays on this machine. An optional <code>OPENAI_API_KEY</code> may power future AI help — everything works without it.</p>
   </footer>
 </main>
 
