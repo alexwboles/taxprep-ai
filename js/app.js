@@ -98,7 +98,7 @@
         desc.textContent = d.desc;
         var where = document.createElement('p');
         where.className = 'doc-where';
-        where.textContent = '📁 ' + d.where;
+        where.textContent = d.where;
         main.appendChild(name);
         main.appendChild(desc);
         main.appendChild(where);
@@ -107,7 +107,7 @@
         if (note) {
           var np = document.createElement('p');
           np.className = 'doc-note';
-          np.textContent = '📝 ' + note;
+          np.textContent = note;
           main.appendChild(np);
         }
 
