@@ -49,8 +49,26 @@
         <h2>Deadline countdown</h2>
         <p class="lede">Every recurring federal deadline, with a live countdown. Anything inside 30 days gets stamped.</p>
       </div>
+      <button id="icsBtn" class="btn ghost small">Add deadlines to calendar (.ics)</button>
     </div>
     <div id="deadlines" class="dl-grid"></div>
+  </section>
+
+  <!-- ============ 4 · estimated payments ============ -->
+  <section class="dossier">
+    <div class="dossier-head">
+      <div>
+        <p class="kicker">Tool · Estimated payments</p>
+        <h2>Quarterly estimate calculator</h2>
+        <p class="lede">Rough math for what you might owe each quarter — federal income tax (single filer, standard deduction) plus self-employment tax. <strong>General guidance only, not tax advice.</strong></p>
+      </div>
+    </div>
+    <div class="calc-grid">
+      <label>Annual W-2 wages ($)<input id="w2Inc" type="number" min="0" step="1000" value="0"></label>
+      <label>Annual self-employment income ($)<input id="seInc" type="number" min="0" step="1000" value="0"></label>
+      <div><button id="calcBtn" class="btn ghost">Calculate quarterly</button></div>
+    </div>
+    <div id="calcOut" class="calc-out"></div>
   </section>
 
   <!-- ============ 3 · the vault ============ -->
@@ -62,6 +80,11 @@
         <p class="lede">Tap a document's stamp to cycle <strong>Missing → Received → N/A</strong>. Add notes like “in the filing cabinet” or “emailed accountant 3/2”.</p>
       </div>
       <span id="progText" class="pill">0 of 0 documents ready</span>
+    </div>
+    <div class="vault-tools">
+      <input id="docSearch" type="search" placeholder="Search documents…" aria-label="Search documents">
+      <label class="check"><input id="missingOnly" type="checkbox"> Missing only</label>
+      <button id="exportBtn" class="btn ghost small">Print / export packet</button>
     </div>
     <div class="vault-meter">
       <div class="vault-meter-track"><div id="progFill" class="vault-meter-fill"></div></div>

@@ -81,8 +81,19 @@
     var notesMap = load(LS_NOTES, {});
     var box = el('checklist');
     box.innerHTML = '';
-    var groups = T.checklistFor(sel);
+    var q = el('docSearch') ? el('docSearch').value : '';
+    var onlyMissing = el('missingOnly') ? el('missingOnly').checked : false;
+    var allGroups = T.checklistFor(sel);
+    var groups = T.filterDocs(allGroups, q, onlyMissing, statusMap);
     var total = 0, done = 0;
+    // progress always reflects the full checklist, not the filtered view
+    allGroups.forEach(function (g) {
+      g.docs.forEach(function (d) {
+        total++;
+        if ((statusMap[d.id] || 'missing') !== 'missing') done++;
+      });
+    });
+    var shown = 0;
 
     groups.forEach(function (g) {
       var h = document.createElement('h3');
@@ -90,9 +101,8 @@
       h.textContent = g.label;
       box.appendChild(h);
       g.docs.forEach(function (d) {
-        total++;
+        shown++;
         var st = statusMap[d.id] || 'missing';
-        if (st !== 'missing') done++;
         var row = document.createElement('div');
         row.className = 'doc-row st-' + st;
         var main = document.createElement('div');
@@ -143,6 +153,12 @@
     var pct = total ? Math.round((done / total) * 100) : 0;
     el('progFill').style.width = pct + '%';
     el('progText').textContent = done + ' of ' + total + ' documents ready (' + pct + '%)';
+    if (!shown && (q || onlyMissing)) {
+      var empty = document.createElement('p');
+      empty.className = 'muted';
+      empty.textContent = 'No documents match this filter. Clear the search or uncheck "Missing only".';
+      box.appendChild(empty);
+    }
   }
 
   function renderDeadlines() {
@@ -168,6 +184,52 @@
     });
   }
 
+  function escHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function money(n) {
+    return '$' + Math.round(Number(n) || 0).toLocaleString('en-US');
+  }
+
+  function exportPacket() {
+    var w = window.open('', '_blank');
+    if (!w) return;
+    var txt = T.checklistText(T.checklistFor(selected()), load(LS_STAT, {}), load(LS_NOTES, {}));
+    w.document.write('<html><head><title>TaxPrep AI — document packet</title></head><body>' +
+      '<pre style="font-family:monospace;white-space:pre-wrap">' + escHtml(txt) + '</pre></body></html>');
+    w.document.close();
+    w.focus();
+    w.print();
+  }
+
+  function downloadICS() {
+    var ics = T.deadlinesICS(T.nextDeadlines(new Date()));
+    var blob = new Blob([ics], { type: 'text/calendar' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'taxprep-deadlines.ics';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  function calcQuarterly() {
+    var out = el('calcOut');
+    var r = T.estimateQuarterly(el('w2Inc').value, el('seInc').value);
+    out.innerHTML =
+      '<div class="calc-nums">' +
+      '<div><span>Income tax (annual)</span><strong>' + money(r.incomeTax) + '</strong></div>' +
+      '<div><span>Self-employment tax</span><strong>' + money(r.seTax) + '</strong></div>' +
+      '<div><span>Total annual</span><strong>' + money(r.annualTotal) + '</strong></div>' +
+      '<div class="big"><span>Per quarter</span><strong>' + money(r.quarterly) + '</strong></div>' +
+      '</div>' +
+      '<p class="muted small">Rough estimate: single filer, standard deduction, simplified brackets. ' +
+      'State taxes not included. Confirm with a tax professional before paying.</p>';
+  }
+
   function render() {
     renderSituations();
     renderChecklist();
@@ -182,6 +244,11 @@
         render();
       }
     });
+    el('docSearch').addEventListener('input', renderChecklist);
+    el('missingOnly').addEventListener('change', renderChecklist);
+    el('exportBtn').addEventListener('click', exportPacket);
+    el('icsBtn').addEventListener('click', downloadICS);
+    el('calcBtn').addEventListener('click', calcQuarterly);
     render();
   });
 })();

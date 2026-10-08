@@ -63,6 +63,39 @@ const idsOk = ['q1', 'file', 'q2', 'q3', 'ext'].every(id => dls.some(d => d.id =
 const namesOk = dls.every(d => d.name && d.name.length > 5);
 idsOk && namesOk ? ok('flow7: all 5 deadline ids/names present') : bad('flow7: deadline metadata incomplete');
 
+// Flow 8: search + missing-only over the merged all-situation checklist
+const mergedAll = T.checklistFor(['employee', 'freelancer', 'homeowner', 'investor']);
+const crypto = T.filterDocs(mergedAll, 'crypto', false, {});
+crypto.length === 1 && crypto[0].docs.length === 1 && crypto[0].docs[0].id === 'crypto'
+  ? ok('flow8: search "crypto" narrows to the 1 investor doc') : bad('flow8: search failed');
+const recv = {};
+mergedAll.forEach(g => g.docs.forEach((d, i) => { if (i === 0) recv[d.id] = 'received'; }));
+const missOnly = T.filterDocs(mergedAll, '', true, recv);
+const missCount = missOnly.reduce((s, g) => s + g.docs.length, 0);
+const fullCount = mergedAll.reduce((s, g) => s + g.docs.length, 0);
+missCount === fullCount - mergedAll.length
+  ? ok('flow8: missing-only hides exactly the 4 received docs (' + missCount + '/' + fullCount + ' shown)')
+  : bad('flow8: missing-only count wrong');
+const combo = T.filterDocs(mergedAll, 'w-2', true, { w2: 'received' });
+combo.length === 0 ? ok('flow8: combined search + missing-only excludes received match') : bad('flow8: combined filter failed');
+
+// Flow 9: quarterly estimator is monotone and splits evenly
+const a = T.estimateQuarterly(50000, 0), b = T.estimateQuarterly(100000, 0);
+b.annualTotal > a.annualTotal && b.quarterly === Math.round(b.annualTotal / 4)
+  ? ok('flow9: higher income -> higher estimate, quarterly = annual/4') : bad('flow9: monotonicity broken');
+const mix = T.estimateQuarterly(80000, 40000);
+mix.seTax > 0 && mix.incomeTax > 0 && mix.annualTotal === mix.incomeTax + mix.seTax
+  ? ok('flow9: mixed W-2 + SE income splits into both tax types') : bad('flow9: mixed income broken');
+
+// Flow 10: ICS round-trips the same 5 deadlines the UI shows
+const dls2 = T.nextDeadlines(from);
+const ics2 = T.deadlinesICS(dls2);
+const allThere = dls2.every(dl => ics2.indexOf('UID:taxprep-' + dl.id + '@local') !== -1);
+allThere ? ok('flow10: ICS contains all 5 deadline UIDs') : bad('flow10: ICS missing deadlines');
+const lines = ics2.split('\r\n');
+lines.every(l => l.length > 0 && l.indexOf('\n') === -1)
+  ? ok('flow10: ICS uses CRLF line endings, no bare LFs') : bad('flow10: ICS line endings wrong');
+
 console.log('---');
 console.log('E2E PASS: ' + pass + '  FAIL: ' + fail);
 process.exit(fail ? 1 : 0);
