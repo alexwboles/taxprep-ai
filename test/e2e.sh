@@ -96,6 +96,48 @@ const lines = ics2.split('\r\n');
 lines.every(l => l.length > 0 && l.indexOf('\n') === -1)
   ? ok('flow10: ICS uses CRLF line endings, no bare LFs') : bad('flow10: ICS line endings wrong');
 
+// Flow 11: filing statuses drive the quarterly estimate
+const fids = T.filingStatusIds();
+(fids.includes('single') && fids.includes('married') && fids.includes('hoh'))
+  ? ok('flow11: 3 filing statuses exposed') : bad('flow11: ' + fids.join(','));
+const rs = T.estimateQuarterly(100000, 0, 'single');
+const rm = T.estimateQuarterly(100000, 0, 'married');
+rs.quarterly > rm.quarterly
+  ? ok('flow11: married estimate lower than single on same income') : bad('flow11: status has no effect');
+const rx = T.estimateQuarterly(100000, 0);
+rx.quarterly === rs.quarterly
+  ? ok('flow11: status defaults to single (backwards compatible)') : bad('flow11: default broken');
+const rh = T.estimateQuarterly(80000, 40000, 'hoh');
+rh.seTax > 0 && rh.quarterly === Math.round(rh.annualTotal / 4)
+  ? ok('flow11: hoh + self-employment math sane') : bad('flow11: hoh math');
+
+// Flow 12: standard vs itemized deduction comparison
+const c1 = T.deductionComparison([], 'single');
+(c1.better === 'standard' && c1.standard === 15000 && c1.itemized === 0)
+  ? ok('flow12: empty expenses -> standard wins') : bad('flow12: ' + JSON.stringify(c1));
+const big = [
+  { category: 'Mortgage interest', amount: 12000 },
+  { category: 'Property tax (SALT)', amount: 9000 },
+  { category: 'Charitable cash', amount: 2500 }
+];
+const c2 = T.deductionComparison(big, 'single');
+(c2.itemized === 23500 && c2.better === 'itemized' && c2.difference === 8500)
+  ? ok('flow12: $23,500 itemized beats $15,000 standard by $8,500') : bad('flow12: ' + JSON.stringify(c2));
+const c3 = T.deductionComparison(big, 'married');
+(c3.better === 'standard' && c3.standard === 30000)
+  ? ok('flow12: same expenses lose to $30,000 married standard') : bad('flow12: ' + JSON.stringify(c3));
+const c4 = T.deductionComparison([{ category: 'X', amount: -50 }, { category: 'Y', amount: 'abc' }], 'single');
+c4.itemized === 0 ? ok('flow12: junk amounts treated as 0') : bad('flow12: junk math');
+
+// Flow 13: per-year storage keys
+T.yearKey('taxprep.status.v1', 2026) === 'taxprep.status.v1.2026'
+  ? ok('flow13: yearKey namespaces by year') : bad('flow13: yearKey wrong');
+T.yearKey('taxprep.status.v1', 2027) !== T.yearKey('taxprep.status.v1', 2026)
+  ? ok('flow13: different years -> different keys') : bad('flow13: keys collide');
+let threw = false;
+try { T.yearKey('taxprep.status.v1', 'nope'); } catch (e) { threw = true; }
+threw ? ok('flow13: yearKey rejects bad years') : bad('flow13: no validation');
+
 console.log('---');
 console.log('E2E PASS: ' + pass + '  FAIL: ' + fail);
 process.exit(fail ? 1 : 0);

@@ -258,3 +258,13 @@ button { font-family: var(--sans); cursor: pointer; }
   .doc-side { flex-direction: row; align-items: center; }
   .dl-grid { grid-template-columns: 1fr 1fr; }
 }
+
+/* ---------- deductions tracker + tax year ---------- */
+.ded-list { margin: 14px 0; display: grid; gap: 8px; }
+.ded-row {
+  display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center;
+  border: 1px solid var(--line, #e5e0d5); padding: 8px 12px;
+}
+.head-tools { display: flex; gap: 10px; align-items: flex-end; }
+.year-pick { display: grid; gap: 4px; font-size: 12.5px; font-weight: 600; }
+.year-pick select { padding: 8px 10px; font-size: 14px; }

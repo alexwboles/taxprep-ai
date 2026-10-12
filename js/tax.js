@@ -188,17 +188,43 @@
     return lines.join('\n');
   }
 
-  // Simplified federal brackets (single filer, approx) for the estimator.
-  var FED_BRACKETS = [
-    [11925, 0.10], [48475, 0.12], [103350, 0.22], [197300, 0.24],
-    [250525, 0.32], [626350, 0.35], [Infinity, 0.37]
-  ];
-  var STD_DEDUCTION_SINGLE = 15000;
+  // Simplified federal brackets + standard deductions per filing status
+  // (2025 figures, rounded for estimation). General guidance only.
+  var FILING_STATUSES = {
+    single: {
+      label: 'Single', stdDeduction: 15000,
+      brackets: [
+        [11925, 0.10], [48475, 0.12], [103350, 0.22], [197300, 0.24],
+        [250525, 0.32], [626350, 0.35], [Infinity, 0.37]
+      ]
+    },
+    married: {
+      label: 'Married filing jointly', stdDeduction: 30000,
+      brackets: [
+        [23850, 0.10], [96950, 0.12], [206700, 0.22], [394600, 0.24],
+        [501050, 0.32], [751600, 0.35], [Infinity, 0.37]
+      ]
+    },
+    hoh: {
+      label: 'Head of household', stdDeduction: 22500,
+      brackets: [
+        [17000, 0.10], [64800, 0.12], [115150, 0.22], [205800, 0.24],
+        [256225, 0.32], [641350, 0.35], [Infinity, 0.37]
+      ]
+    }
+  };
 
-  function federalIncomeTax(taxable) {
+  function filingStatusIds() { return Object.keys(FILING_STATUSES); }
+
+  function statusOf(s) {
+    return FILING_STATUSES[s] || FILING_STATUSES.single;
+  }
+
+  function federalIncomeTax(taxable, status) {
+    var brackets = statusOf(status).brackets;
     var tax = 0, prev = 0;
-    for (var i = 0; i < FED_BRACKETS.length; i++) {
-      var cap = FED_BRACKETS[i][0], rate = FED_BRACKETS[i][1];
+    for (var i = 0; i < brackets.length; i++) {
+      var cap = brackets[i][0], rate = brackets[i][1];
       if (taxable <= prev) break;
       tax += (Math.min(taxable, cap) - prev) * rate;
       prev = cap;
@@ -207,21 +233,54 @@
   }
 
   /**
-   * Rough quarterly estimated-payment calculator (single filer, simplified).
-   * w2Income / seIncome: annual dollars. Returns
-   * { incomeTax, seTax, annualTotal, quarterly } rounded to whole dollars.
+   * Rough quarterly estimated-payment calculator (simplified).
+   * w2Income / seIncome: annual dollars. status: 'single'|'married'|'hoh'.
+   * Returns { incomeTax, seTax, annualTotal, quarterly, status } rounded.
    * General guidance only — not tax advice.
    */
-  function estimateQuarterly(w2Income, seIncome) {
+  function estimateQuarterly(w2Income, seIncome, status) {
+    var st = statusOf(status);
     var w2 = Math.max(0, Number(w2Income) || 0);
     var se = Math.max(0, Number(seIncome) || 0);
     var seNet = se * 0.9235;
     var seTax = seNet * 0.153;
-    var taxable = Math.max(0, w2 + seNet - seTax / 2 - STD_DEDUCTION_SINGLE);
-    var incomeTax = federalIncomeTax(taxable);
+    var taxable = Math.max(0, w2 + seNet - seTax / 2 - st.stdDeduction);
+    var incomeTax = federalIncomeTax(taxable, status);
     var annual = incomeTax + seTax;
     var r = function (n) { return Math.round(n); };
-    return { incomeTax: r(incomeTax), seTax: r(seTax), annualTotal: r(annual), quarterly: r(annual / 4) };
+    return { incomeTax: r(incomeTax), seTax: r(seTax), annualTotal: r(annual), quarterly: r(annual / 4), status: status || 'single' };
+  }
+
+  var DEDUCTION_CATEGORIES = [
+    'Mortgage interest', 'Property tax (SALT)', 'State/local income tax (SALT)',
+    'Charitable cash', 'Charitable goods', 'Medical expenses',
+    'Unreimbursed business expenses', 'Other'
+  ];
+
+  /**
+   * Compare itemized deductions against the standard deduction.
+   * expenses: [{category, amount}]. status: filing status id.
+   * Returns {itemized, standard, better: 'itemized'|'standard', difference}.
+   */
+  function deductionComparison(expenses, status) {
+    var st = statusOf(status);
+    var total = (expenses || []).reduce(function (a, e) {
+      return a + Math.max(0, Number(e && e.amount) || 0);
+    }, 0);
+    var better = total > st.stdDeduction ? 'itemized' : 'standard';
+    return {
+      itemized: Math.round(total),
+      standard: st.stdDeduction,
+      better: better,
+      difference: Math.round(Math.abs(total - st.stdDeduction))
+    };
+  }
+
+  /** Per-year localStorage key namespacing: 'taxprep.status.v1' + year -> 'taxprep.status.v1.2026'. */
+  function yearKey(base, year) {
+    var y = parseInt(year, 10);
+    if (!isFinite(y)) throw new Error('bad tax year: ' + year);
+    return String(base).replace(/\.+$/, '') + '.' + y;
   }
 
   function icsDate(d) {
@@ -266,6 +325,12 @@
     filterDocs: filterDocs,
     checklistText: checklistText,
     estimateQuarterly: estimateQuarterly,
+    federalIncomeTax: federalIncomeTax,
+    FILING_STATUSES: FILING_STATUSES,
+    filingStatusIds: filingStatusIds,
+    DEDUCTION_CATEGORIES: DEDUCTION_CATEGORIES,
+    deductionComparison: deductionComparison,
+    yearKey: yearKey,
     deadlinesICS: deadlinesICS
   };
 }));

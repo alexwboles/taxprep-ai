@@ -14,6 +14,9 @@ TaxPrep AI runs **100% locally in your browser**:
 2. **Document vault** — every document shows what it is and where to find it. Tap its status to cycle **Missing → Received → N/A**, and attach notes ("in the filing cabinet", "emailed accountant 3/2"). A progress bar tracks your readiness.
 3. **Deadline countdowns** — Q1–Q3 estimated payments, the April 15 filing deadline, and the October 15 extended deadline, each with a live "in N days" countdown. Urgent ones (≤30 days) are highlighted.
 4. **Situation-specific guidance** — 21 documents across the four situations, each with a plain-English description and where to actually find it.
+5. **Tax-year rollover** — a year picker keeps one vault per tax year; switching years starts fresh while old years stay viewable (existing data migrates automatically)
+6. **Filing status** — single, married filing jointly, or head of household drives the standard deduction and brackets in the estimator
+7. **Deduction tracker** — log deductible expenses through the year and see your running itemized total against the standard deduction
 
 Optional: set `OPENAI_API_KEY` for AI document help in a future version — everything works fully offline without it.
 

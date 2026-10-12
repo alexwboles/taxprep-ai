@@ -2,9 +2,38 @@
 (function () {
   'use strict';
   var T = window.TaxPrep;
-  var LS_SIT = 'taxprep.situations.v1';
-  var LS_STAT = 'taxprep.status.v1';
-  var LS_NOTES = 'taxprep.notes.v1';
+
+  /* Per-year storage: the vault tracks one tax year at a time. Keys are
+   * namespaced per year ('taxprep.status.v1.2026'); switching the year
+   * starts a fresh vault while the old year stays viewable. */
+  var LS_YEAR = 'taxprep.year.v1';
+  var LS_SIT, LS_STAT, LS_NOTES, LS_DED, LS_FILE;
+
+  function taxYear() {
+    var y = load(LS_YEAR, new Date().getFullYear());
+    return parseInt(y, 10) || new Date().getFullYear();
+  }
+
+  function refreshKeys() {
+    var y = taxYear();
+    LS_SIT = T.yearKey('taxprep.situations.v1', y);
+    LS_STAT = T.yearKey('taxprep.status.v1', y);
+    LS_NOTES = T.yearKey('taxprep.notes.v1', y);
+    LS_DED = T.yearKey('taxprep.deductions.v1', y);
+    LS_FILE = T.yearKey('taxprep.filing.v1', y);
+  }
+
+  /* One-time migration: copy pre-year keys into the current year's keys. */
+  function migrateYearKeys() {
+    if (load('taxprep.migrated.v1', false)) return;
+    refreshKeys();
+    [['taxprep.situations.v1', LS_SIT], ['taxprep.status.v1', LS_STAT],
+     ['taxprep.notes.v1', LS_NOTES]].forEach(function (pair) {
+      var oldV = load(pair[0], undefined);
+      if (oldV !== undefined && load(pair[1], undefined) === undefined) save(pair[1], oldV);
+    });
+    save('taxprep.migrated.v1', true);
+  }
 
   function load(key, fallback) {
     try {
@@ -216,9 +245,16 @@
     document.body.removeChild(a);
   }
 
+  function filingStatus() {
+    var s = load(LS_FILE, 'single');
+    return T.FILING_STATUSES[s] ? s : 'single';
+  }
+
   function calcQuarterly() {
     var out = el('calcOut');
-    var r = T.estimateQuarterly(el('w2Inc').value, el('seInc').value);
+    var st = filingStatus();
+    save(LS_FILE, st);
+    var r = T.estimateQuarterly(el('w2Inc').value, el('seInc').value, st);
     out.innerHTML =
       '<div class="calc-nums">' +
       '<div><span>Income tax (annual)</span><strong>' + money(r.incomeTax) + '</strong></div>' +
@@ -226,17 +262,94 @@
       '<div><span>Total annual</span><strong>' + money(r.annualTotal) + '</strong></div>' +
       '<div class="big"><span>Per quarter</span><strong>' + money(r.quarterly) + '</strong></div>' +
       '</div>' +
-      '<p class="muted small">Rough estimate: single filer, standard deduction, simplified brackets. ' +
+      '<p class="muted small">Rough estimate: ' + T.FILING_STATUSES[st].label.toLowerCase() +
+      ' filer, standard deduction, simplified brackets. ' +
       'State taxes not included. Confirm with a tax professional before paying.</p>';
   }
 
+  /* ---------- standard vs itemized deduction tracker ---------- */
+  function deductions() { return load(LS_DED, []); }
+
+  function renderDeductions() {
+    var exps = deductions();
+    var list = el('dedList');
+    list.innerHTML = '';
+    if (!exps.length) {
+      list.innerHTML = '<p class="muted small">No expenses logged yet. Add deductible spending above as it happens.</p>';
+    }
+    exps.forEach(function (e, i) {
+      var row = document.createElement('div');
+      row.className = 'ded-row';
+      var lbl = document.createElement('span');
+      lbl.textContent = e.category;
+      var amt = document.createElement('strong');
+      amt.textContent = money(e.amount);
+      var rm = document.createElement('button');
+      rm.className = 'btn ghost small';
+      rm.textContent = 'Remove';
+      rm.onclick = function () {
+        var a = deductions();
+        a.splice(i, 1);
+        save(LS_DED, a);
+        renderDeductions();
+      };
+      row.appendChild(lbl); row.appendChild(amt); row.appendChild(rm);
+      list.appendChild(row);
+    });
+    var st = filingStatus();
+    var c = T.deductionComparison(exps, st);
+    el('dedOut').innerHTML =
+      '<div class="calc-nums">' +
+      '<div><span>Your itemized total</span><strong>' + money(c.itemized) + '</strong></div>' +
+      '<div><span>Standard (' + T.FILING_STATUSES[st].label.toLowerCase() + ')</span><strong>' + money(c.standard) + '</strong></div>' +
+      '<div class="big"><span>' + (c.better === 'itemized' ? 'Itemized wins' : 'Standard wins') +
+      '</span><strong>by ' + money(c.difference) + '</strong></div>' +
+      '</div>';
+  }
+
+  function addDeduction() {
+    var cat = el('dedCat').value;
+    var amt = Math.max(0, Math.round(Number(el('dedAmt').value) || 0));
+    if (!amt) return;
+    var a = deductions();
+    a.push({ category: cat, amount: amt });
+    save(LS_DED, a);
+    el('dedAmt').value = '0';
+    renderDeductions();
+  }
+
+  /* ---------- tax year ---------- */
+  function buildYearSel() {
+    var sel = el('yearSel');
+    var y0 = new Date().getFullYear();
+    sel.innerHTML = '';
+    [y0 - 1, y0, y0 + 1].forEach(function (y) {
+      var o = document.createElement('option');
+      o.value = y;
+      o.textContent = y;
+      sel.appendChild(o);
+    });
+    sel.value = taxYear();
+    sel.onchange = function () {
+      save(LS_YEAR, parseInt(sel.value, 10));
+      refreshKeys();
+      render();
+      renderDeductions();
+    };
+  }
+
   function render() {
+    refreshKeys();
+    el('filingStatus').value = filingStatus();
     renderSituations();
     renderChecklist();
     renderDeadlines();
   }
 
   document.addEventListener('DOMContentLoaded', function () {
+    migrateYearKeys();
+    refreshKeys();
+    buildYearSel();
     el('resetBtn').addEventListener('click', function () {
       if (confirm('Reset all document statuses and notes?')) {
         save(LS_STAT, {});
@@ -249,6 +362,12 @@
     el('exportBtn').addEventListener('click', exportPacket);
     el('icsBtn').addEventListener('click', downloadICS);
     el('calcBtn').addEventListener('click', calcQuarterly);
+    el('filingStatus').addEventListener('change', calcQuarterly);
+    el('dedCat').innerHTML = T.DEDUCTION_CATEGORIES.map(function (c) {
+      return '<option>' + c + '</option>';
+    }).join('');
+    el('dedAddBtn').addEventListener('click', addDeduction);
     render();
+    renderDeductions();
   });
 })();
