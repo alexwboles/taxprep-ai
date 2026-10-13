@@ -17,6 +17,10 @@ TaxPrep AI runs **100% locally in your browser**:
 5. **Tax-year rollover** — a year picker keeps one vault per tax year; switching years starts fresh while old years stay viewable (existing data migrates automatically)
 6. **Filing status** — single, married filing jointly, or head of household drives the standard deduction and brackets in the estimator
 7. **Deduction tracker** — log deductible expenses through the year and see your running itemized total against the standard deduction
+8. **Quarterly estimate calculator** — rough math for what you might owe each quarter (federal income tax by filing status + self-employment tax)
+9. **Refund / owed estimator** — enter W-2 withholding plus your logged estimated payments to see a rough refund-or-owed figure
+10. **Payment ledger** — log each quarterly estimated payment; per-quarter paid/remaining tracked against the calculator's suggested amount
+11. **Accountant packet** — the print/export packet now includes the deduction verdict, payment ledger, and upcoming deadlines alongside the document checklist
 
 Optional: set `OPENAI_API_KEY` for AI document help in a future version — everything works fully offline without it.
 

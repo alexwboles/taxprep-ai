@@ -268,3 +268,7 @@ button { font-family: var(--sans); cursor: pointer; }
 .head-tools { display: flex; gap: 10px; align-items: flex-end; }
 .year-pick { display: grid; gap: 4px; font-size: 12.5px; font-weight: 600; }
 .year-pick select { padding: 8px 10px; font-size: 14px; }
+
+/* ---------- refund/owed verdict + payment targets ---------- */
+.calc-nums .good strong { color: #166534; }
+.calc-nums .bad strong { color: #991b1b; }

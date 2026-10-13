@@ -7,7 +7,7 @@
    * namespaced per year ('taxprep.status.v1.2026'); switching the year
    * starts a fresh vault while the old year stays viewable. */
   var LS_YEAR = 'taxprep.year.v1';
-  var LS_SIT, LS_STAT, LS_NOTES, LS_DED, LS_FILE;
+  var LS_SIT, LS_STAT, LS_NOTES, LS_DED, LS_FILE, LS_PAY;
 
   function taxYear() {
     var y = load(LS_YEAR, new Date().getFullYear());
@@ -21,6 +21,7 @@
     LS_NOTES = T.yearKey('taxprep.notes.v1', y);
     LS_DED = T.yearKey('taxprep.deductions.v1', y);
     LS_FILE = T.yearKey('taxprep.filing.v1', y);
+    LS_PAY = T.yearKey('taxprep.payments.v1', y);
   }
 
   /* One-time migration: copy pre-year keys into the current year's keys. */
@@ -226,7 +227,22 @@
   function exportPacket() {
     var w = window.open('', '_blank');
     if (!w) return;
-    var txt = T.checklistText(T.checklistFor(selected()), load(LS_STAT, {}), load(LS_NOTES, {}));
+    var st = filingStatus();
+    var dc = T.deductionComparison(deductions(), st);
+    var q = T.estimateQuarterly(el('w2Inc').value, el('seInc').value, st);
+    var txt = T.accountantPacketText({
+      year: taxYear(),
+      groups: T.checklistFor(selected()),
+      statusMap: load(LS_STAT, {}),
+      notesMap: load(LS_NOTES, {}),
+      deduction: {
+        itemized: dc.itemized, standard: dc.standard,
+        better: dc.better, difference: dc.difference,
+        statusLabel: T.FILING_STATUSES[st].label
+      },
+      payments: T.paymentSummary(payments(), q.quarterly),
+      deadlines: T.nextDeadlines(new Date()).slice(0, 5)
+    });
     w.document.write('<html><head><title>TaxPrep AI — document packet</title></head><body>' +
       '<pre style="font-family:monospace;white-space:pre-wrap">' + escHtml(txt) + '</pre></body></html>');
     w.document.close();
@@ -255,6 +271,11 @@
     var st = filingStatus();
     save(LS_FILE, st);
     var r = T.estimateQuarterly(el('w2Inc').value, el('seInc').value, st);
+    var rf = T.estimateRefund(el('w2Inc').value, el('seInc').value, st,
+      el('w2With').value, payments().reduce(function (a, p) { return a + (Number(p.amount) || 0); }, 0));
+    var verdictHtml = rf.verdict === 'refund'
+      ? '<div class="big good"><span>Estimated refund</span><strong>' + money(rf.net) + '</strong></div>'
+      : '<div class="big bad"><span>Estimated amount owed</span><strong>' + money(-rf.net) + '</strong></div>';
     out.innerHTML =
       '<div class="calc-nums">' +
       '<div><span>Income tax (annual)</span><strong>' + money(r.incomeTax) + '</strong></div>' +
@@ -262,9 +283,14 @@
       '<div><span>Total annual</span><strong>' + money(r.annualTotal) + '</strong></div>' +
       '<div class="big"><span>Per quarter</span><strong>' + money(r.quarterly) + '</strong></div>' +
       '</div>' +
+      '<div class="calc-nums">' +
+      '<div><span>Already paid (withholding + logged payments)</span><strong>' + money(rf.alreadyPaid) + '</strong></div>' +
+      verdictHtml +
+      '</div>' +
       '<p class="muted small">Rough estimate: ' + T.FILING_STATUSES[st].label.toLowerCase() +
       ' filer, standard deduction, simplified brackets. ' +
       'State taxes not included. Confirm with a tax professional before paying.</p>';
+    renderPayments(); // refresh suggested per-quarter targets
   }
 
   /* ---------- standard vs itemized deduction tracker ---------- */
@@ -318,6 +344,68 @@
     renderDeductions();
   }
 
+  /* ---------- quarterly estimated-payment tracker ---------- */
+  function payments() { return load(LS_PAY, []); }
+
+  function renderPayments() {
+    var pays = payments();
+    var list = el('payList');
+    list.innerHTML = '';
+    if (!pays.length) {
+      list.innerHTML = '<p class="muted small">No payments logged yet. Log each quarterly payment as you make it.</p>';
+    }
+    var sorted = pays.slice().sort(function (a, b) {
+      return (a.quarter - b.quarter) || String(a.date).localeCompare(String(b.date));
+    });
+    sorted.forEach(function (p) {
+      var idx = pays.indexOf(p);
+      var row = document.createElement('div');
+      row.className = 'ded-row';
+      var lbl = document.createElement('span');
+      lbl.textContent = 'Q' + p.quarter + ' · ' + p.date;
+      var amt = document.createElement('strong');
+      amt.textContent = money(p.amount);
+      var rm = document.createElement('button');
+      rm.className = 'btn ghost small';
+      rm.textContent = 'Remove';
+      rm.onclick = function () {
+        var a = payments();
+        a.splice(idx, 1);
+        save(LS_PAY, a);
+        renderPayments();
+      };
+      row.appendChild(lbl); row.appendChild(amt); row.appendChild(rm);
+      list.appendChild(row);
+    });
+    // suggested per-quarter amount comes from the estimator inputs above
+    var st = filingStatus();
+    var target = T.estimateQuarterly(el('w2Inc').value, el('seInc').value, st).quarterly;
+    var s = T.paymentSummary(pays, target);
+    el('payOut').innerHTML =
+      '<div class="calc-nums">' +
+      s.quarters.map(function (q) {
+        return '<div class="' + (q.met && target ? 'good' : '') + '"><span>Q' + q.quarter +
+          (target ? ' · suggested ' + money(q.target) : '') + '</span><strong>' +
+          money(q.paid) + ' paid' + (q.remaining && target ? ' · ' + money(q.remaining) + ' left' : '') +
+          '</strong></div>';
+      }).join('') +
+      '<div class="big"><span>Total paid this year</span><strong>' + money(s.totalPaid) + '</strong></div>' +
+      '</div>' +
+      (target ? '' : '<p class="muted small">Enter income above and hit Calculate to see suggested per-quarter amounts.</p>');
+  }
+
+  function addPayment() {
+    var q = parseInt(el('payQ').value, 10);
+    var date = el('payDate').value;
+    var amt = Math.max(0, Math.round(Number(el('payAmt').value) || 0));
+    if (!(q >= 1 && q <= 4) || !date || !amt) return;
+    var a = payments();
+    a.push({ quarter: q, date: date, amount: amt });
+    save(LS_PAY, a);
+    el('payAmt').value = '0';
+    renderPayments();
+  }
+
   /* ---------- tax year ---------- */
   function buildYearSel() {
     var sel = el('yearSel');
@@ -335,6 +423,7 @@
       refreshKeys();
       render();
       renderDeductions();
+      renderPayments();
     };
   }
 
@@ -344,6 +433,7 @@
     renderSituations();
     renderChecklist();
     renderDeadlines();
+    renderPayments();
   }
 
   document.addEventListener('DOMContentLoaded', function () {
@@ -367,6 +457,7 @@
       return '<option>' + c + '</option>';
     }).join('');
     el('dedAddBtn').addEventListener('click', addDeduction);
+    el('payAddBtn').addEventListener('click', addPayment);
     render();
     renderDeductions();
   });

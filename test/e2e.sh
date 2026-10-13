@@ -138,6 +138,51 @@ let threw = false;
 try { T.yearKey('taxprep.status.v1', 'nope'); } catch (e) { threw = true; }
 threw ? ok('flow13: yearKey rejects bad years') : bad('flow13: no validation');
 
+// Flow 14: paymentSummary tracks per-quarter paid/remaining against the target
+const pays = [
+  { quarter: 1, date: '2026-04-10', amount: 1500 },
+  { quarter: 1, date: '2026-04-12', amount: 500 },
+  { quarter: 2, date: '2026-06-14', amount: 2000 },
+  { quarter: 9, date: '2026-06-14', amount: 99999 }, // invalid quarter ignored
+  { quarter: 3, date: '', amount: 100 }             // missing date ignored
+];
+const ps = T.paymentSummary(pays, 2000);
+ps.quarters[0].paid === 2000 ? ok('flow14: Q1 sums two payments') : bad('flow14: Q1 paid=' + ps.quarters[0].paid);
+ps.quarters[0].met === true ? ok('flow14: Q1 met at target') : bad('flow14: Q1 met flag');
+ps.quarters[2].paid === 0 && ps.quarters[2].remaining === 2000
+  ? ok('flow14: Q3 unpaid shows full remaining') : bad('flow14: Q3=' + JSON.stringify(ps.quarters[2]));
+ps.totalPaid === 4000 ? ok('flow14: totalPaid=4000 (junk ignored)') : bad('flow14: totalPaid=' + ps.totalPaid);
+ps.totalRemaining === 4000 ? ok('flow14: totalRemaining=4000') : bad('flow14: remaining=' + ps.totalRemaining);
+T.paymentSummary([], 0).quarters.every(q => q.paid === 0)
+  ? ok('flow14: empty ledger is all zeros') : bad('flow14: empty ledger');
+
+// Flow 15: estimateRefund — refund when overpaid, owed when underpaid
+const q1 = T.estimateQuarterly(80000, 20000, 'single');
+const r1 = T.estimateRefund(80000, 20000, 'single', q1.annualTotal + 500, 0);
+r1.verdict === 'refund' && r1.net === 500
+  ? ok('flow15: overpayment -> $500 refund') : bad('flow15: ' + JSON.stringify({ verdict: r1.verdict, net: r1.net }));
+const r2 = T.estimateRefund(80000, 20000, 'single', 1000, 1000);
+r2.verdict === 'owed' && r2.net === 2000 - q1.annualTotal
+  ? ok('flow15: underpayment -> owed ' + (-r2.net)) : bad('flow15: ' + JSON.stringify({ verdict: r2.verdict, net: r2.net }));
+r2.totalTax === q1.annualTotal ? ok('flow15: refund total matches quarterly estimate') : bad('flow15: total mismatch');
+
+// Flow 16: accountantPacketText composes checklist + deductions + payments + deadlines
+const pkt = T.accountantPacketText({
+  year: 2026,
+  groups: T.checklistFor(['employee']),
+  statusMap: { w2: 'received' },
+  notesMap: { w2: 'in drawer' },
+  deduction: { itemized: 18000, standard: 15000, better: 'itemized', difference: 3000, statusLabel: 'Single' },
+  payments: T.paymentSummary([{ quarter: 1, date: '2026-04-10', amount: 1500 }], 2000),
+  deadlines: T.nextDeadlines(new Date(2026, 8, 28)).slice(0, 2)
+});
+pkt.includes('Tax year: 2026') ? ok('flow16: packet has tax year') : bad('flow16: no year');
+pkt.includes('[Received] W-2 wage statements') ? ok('flow16: packet has checklist with status') : bad('flow16: checklist');
+pkt.includes('Note: in drawer') ? ok('flow16: packet carries doc notes') : bad('flow16: notes');
+pkt.includes('Better: itemized by $3,000') ? ok('flow16: packet has deduction verdict') : bad('flow16: deductions');
+pkt.includes('Q1: paid $1,500 of $2,000 suggested') ? ok('flow16: packet has payment ledger') : bad('flow16: payments');
+pkt.includes('Extended filing deadline') ? ok('flow16: packet has deadlines') : bad('flow16: deadlines');
+
 console.log('---');
 console.log('E2E PASS: ' + pass + '  FAIL: ' + fail);
 process.exit(fail ? 1 : 0);

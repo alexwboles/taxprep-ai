@@ -78,9 +78,36 @@
       </label>
       <label>Annual W-2 wages ($)<input id="w2Inc" type="number" min="0" step="1000" value="0"></label>
       <label>Annual self-employment income ($)<input id="seInc" type="number" min="0" step="1000" value="0"></label>
+      <label>W-2 withholding paid so far ($)<input id="w2With" type="number" min="0" step="100" value="0"></label>
       <div><button id="calcBtn" class="btn ghost">Calculate quarterly</button></div>
     </div>
     <div id="calcOut" class="calc-out"></div>
+  </section>
+
+  <!-- ============ payments made ============ -->
+  <section class="dossier">
+    <div class="dossier-head">
+      <div>
+        <p class="kicker">Tool · Estimated payments</p>
+        <h2>Payments made</h2>
+        <p class="lede">Log each quarterly estimated payment as you make it — per-quarter totals are tracked against the suggested amount from the calculator above.</p>
+      </div>
+    </div>
+    <div class="calc-grid">
+      <label>Quarter
+        <select id="payQ">
+          <option value="1">Q1</option>
+          <option value="2">Q2</option>
+          <option value="3">Q3</option>
+          <option value="4">Q4</option>
+        </select>
+      </label>
+      <label>Date<input id="payDate" type="date"></label>
+      <label>Amount ($)<input id="payAmt" type="number" min="0" step="10" value="0"></label>
+      <div><button id="payAddBtn" class="btn ghost">Log payment</button></div>
+    </div>
+    <div id="payList" class="ded-list"></div>
+    <div id="payOut" class="calc-out"></div>
   </section>
 
   <!-- ============ 2b · deductions ============ -->

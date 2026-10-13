@@ -132,6 +132,12 @@ for needle in FILING_STATUSES deductionComparison yearKey filingStatus renderDed
 done
 [ -z "$missing2" ] && ok "app.js/tax.js wire filing status, deduction tracker, tax-year keys" || bad "missing wiring:$missing2"
 
+missing3=""
+for needle in paymentSummary estimateRefund accountantPacketText renderPayments payAddBtn payQ payDate payAmt w2With; do
+  grep -q "$needle" js/app.js || grep -q "$needle" js/tax.js || grep -q "$needle" index.html || missing3="$missing3 $needle"
+done
+[ -z "$missing3" ] && ok "app.js/tax.js/index.html wire payment tracker, refund estimator, packet" || bad "missing wiring:$missing3"
+
 echo "---"
 echo "SMOKE PASS: $PASS  FAIL: $FAIL"
 [ "$FAIL" -eq 0 ]
