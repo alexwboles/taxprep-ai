@@ -183,6 +183,8 @@
     var pct = total ? Math.round((done / total) * 100) : 0;
     el('progFill').style.width = pct + '%';
     el('progText').textContent = done + ' of ' + total + ' documents ready (' + pct + '%)';
+    var sv = el('stepVault');
+    if (sv) sv.textContent = done + '/' + total;
     if (!shown && (q || onlyMissing)) {
       var empty = document.createElement('p');
       empty.className = 'muted';
@@ -266,6 +268,27 @@
     return T.FILING_STATUSES[s] ? s : 'single';
   }
 
+  /* ---------- live refund ticker (TurboTax monitor pattern) ---------- */
+  function updateTicker() {
+    var st = filingStatus();
+    var paidSoFar = payments().reduce(function (a, p) { return a + (Number(p.amount) || 0); }, 0);
+    var rf = T.estimateRefund(el('w2Inc').value, el('seInc').value, st, el('w2With').value, paidSoFar);
+    var tick = el('ticker');
+    tick.classList.toggle('owed', rf.verdict === 'owed');
+    el('tickerLabel').textContent = rf.verdict === 'refund' ? 'EST. REFUND' : 'EST. OWED';
+    el('tickerNum').textContent = money(Math.abs(rf.net));
+    var next = T.nextDeadlines(new Date())[0];
+    el('tickerDl').innerHTML = next
+      ? 'Next: <b>' + escapeHtml(next.name) + '</b> ' + T.countdownLabel(next.daysLeft)
+      : '—';
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
   function calcQuarterly() {
     var out = el('calcOut');
     var st = filingStatus();
@@ -274,9 +297,10 @@
     var rf = T.estimateRefund(el('w2Inc').value, el('seInc').value, st,
       el('w2With').value, payments().reduce(function (a, p) { return a + (Number(p.amount) || 0); }, 0));
     var verdictHtml = rf.verdict === 'refund'
-      ? '<div class="big good"><span>Estimated refund</span><strong>' + money(rf.net) + '</strong></div>'
-      : '<div class="big bad"><span>Estimated amount owed</span><strong>' + money(-rf.net) + '</strong></div>';
+      ? '<div class="verdict"><span>Estimated refund</span><strong>' + money(rf.net) + '</strong></div>'
+      : '<div class="verdict owed"><span>Estimated amount owed</span><strong>' + money(-rf.net) + '</strong></div>';
     out.innerHTML =
+      verdictHtml +
       '<div class="calc-nums">' +
       '<div><span>Income tax (annual)</span><strong>' + money(r.incomeTax) + '</strong></div>' +
       '<div><span>Self-employment tax</span><strong>' + money(r.seTax) + '</strong></div>' +
@@ -285,12 +309,12 @@
       '</div>' +
       '<div class="calc-nums">' +
       '<div><span>Already paid (withholding + logged payments)</span><strong>' + money(rf.alreadyPaid) + '</strong></div>' +
-      verdictHtml +
       '</div>' +
       '<p class="muted small">Rough estimate: ' + T.FILING_STATUSES[st].label.toLowerCase() +
       ' filer, standard deduction, simplified brackets. ' +
       'State taxes not included. Confirm with a tax professional before paying.</p>';
     renderPayments(); // refresh suggested per-quarter targets
+    updateTicker();
   }
 
   /* ---------- standard vs itemized deduction tracker ---------- */
@@ -404,6 +428,7 @@
     save(LS_PAY, a);
     el('payAmt').value = '0';
     renderPayments();
+    updateTicker();
   }
 
   /* ---------- tax year ---------- */
@@ -434,6 +459,7 @@
     renderChecklist();
     renderDeadlines();
     renderPayments();
+    updateTicker();
   }
 
   document.addEventListener('DOMContentLoaded', function () {
@@ -452,7 +478,12 @@
     el('exportBtn').addEventListener('click', exportPacket);
     el('icsBtn').addEventListener('click', downloadICS);
     el('calcBtn').addEventListener('click', calcQuarterly);
-    el('filingStatus').addEventListener('change', calcQuarterly);
+    el('filingStatus').addEventListener('change', function () { calcQuarterly(); });
+    // live ticker: recompute on every keystroke like TurboTax's refund monitor
+    ['w2Inc', 'seInc', 'w2With'].forEach(function (id) {
+      el(id).addEventListener('input', updateTicker);
+    });
+    el('filingStatus').addEventListener('change', updateTicker);
     el('dedCat').innerHTML = T.DEDUCTION_CATEGORIES.map(function (c) {
       return '<option>' + c + '</option>';
     }).join('');

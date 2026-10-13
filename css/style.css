@@ -272,3 +272,63 @@ button { font-family: var(--sans); cursor: pointer; }
 /* ---------- refund/owed verdict + payment targets ---------- */
 .calc-nums .good strong { color: #166534; }
 .calc-nums .bad strong { color: #991b1b; }
+
+/* ---------- redesign: live refund ticker (TurboTax monitor) ---------- */
+.ticker { background: var(--mast); border-top: 1px solid rgba(255,255,255,.12); position: sticky; top: 0; z-index: 50; }
+.ticker-inner {
+  max-width: 1080px; margin: 0 auto; padding: 10px 28px;
+  display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+}
+.ticker-label {
+  font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 2px;
+  color: var(--mast-muted);
+}
+.ticker-num {
+  font-family: var(--serif); font-size: 30px; font-weight: 700; letter-spacing: -.5px;
+  font-variant-numeric: tabular-nums; color: #7fd6a4;
+}
+.ticker.owed .ticker-num { color: #f0b429; }
+.ticker.owed .ticker-label { color: #e8c97a; }
+.ticker-sep { color: rgba(255,255,255,.25); }
+.ticker-dl { font-size: 13px; color: var(--mast-muted); }
+.ticker-dl b { color: #fff; font-variant-numeric: tabular-nums; }
+
+/* ---------- redesign: section stepper ---------- */
+.stepper {
+  display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 22px;
+  background: var(--card); border: 1px solid var(--line); padding: 10px 12px;
+  box-shadow: var(--shadow); position: sticky; top: 57px; z-index: 40;
+}
+.stepper a {
+  display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
+  color: var(--ink-soft); font-size: 13.5px; font-weight: 650;
+  padding: 7px 12px 7px 7px; border: 1px solid transparent;
+}
+.stepper a:hover { border-color: var(--ledger); color: var(--ledger-deep); }
+.sn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; background: var(--ledger); color: #fff;
+  font-size: 12px; font-weight: 800;
+}
+.sv {
+  font-family: var(--mono); font-size: 11px; background: var(--ledger-soft);
+  border: 1px solid var(--ledger); color: var(--ledger-deep); padding: 1px 7px;
+  font-variant-numeric: tabular-nums;
+}
+section.dossier { scroll-margin-top: 130px; }
+
+/* ---------- redesign: verdict-first results ---------- */
+.calc-out .verdict {
+  border: 1px solid var(--line); border-left: 6px solid var(--ledger);
+  background: #fff; padding: 16px 20px; margin: 0 0 16px;
+  display: flex; align-items: baseline; justify-content: space-between; gap: 14px; flex-wrap: wrap;
+}
+.calc-out .verdict.owed { border-left-color: var(--amber); }
+.calc-out .verdict span { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.6px; color: var(--muted); }
+.calc-out .verdict strong { font-family: var(--serif); font-size: 38px; color: var(--ledger-deep); font-variant-numeric: tabular-nums; }
+.calc-out .verdict.owed strong { color: var(--amber); }
+@media (max-width: 700px) {
+  .stepper { top: 53px; }
+  .ticker-inner { padding: 8px 16px; }
+  .ticker-num { font-size: 24px; }
+}

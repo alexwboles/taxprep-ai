@@ -22,14 +22,30 @@
     </div>
   </div>
   <div class="mast-rule"></div>
+  <div class="ticker" id="ticker" aria-live="polite">
+    <div class="ticker-inner">
+      <span class="ticker-label" id="tickerLabel">EST. REFUND</span>
+      <strong class="ticker-num" id="tickerNum">$0</strong>
+      <span class="ticker-sep" aria-hidden="true">·</span>
+      <span class="ticker-dl" id="tickerDl">—</span>
+    </div>
+  </div>
 </header>
 
 <main class="ledger">
 
+  <nav class="stepper" aria-label="Tax prep sections">
+    <a href="#sec-profile"><span class="sn">1</span> Profile</a>
+    <a href="#sec-calendar"><span class="sn">2</span> Calendar</a>
+    <a href="#sec-estimate"><span class="sn">3</span> Estimate</a>
+    <a href="#sec-deductions"><span class="sn">4</span> Deductions</a>
+    <a href="#sec-vault"><span class="sn">5</span> Vault <span class="sv" id="stepVault">0/0</span></a>
+  </nav>
+
   <p class="disclaimer"><strong>General guidance only — not tax advice.</strong> Deadlines shown are recurring U.S. federal dates; your state dates and holiday shifts may differ. When in doubt, ask a tax professional.</p>
 
   <!-- ============ 1 · filing situation ============ -->
-  <section class="dossier">
+  <section class="dossier" id="sec-profile">
     <div class="dossier-head">
       <div>
         <p class="kicker">Step 1 · Filing profile</p>
@@ -47,7 +63,7 @@
   </section>
 
   <!-- ============ 2 · deadlines ============ -->
-  <section class="dossier">
+  <section class="dossier" id="sec-calendar">
     <div class="dossier-head">
       <div>
         <p class="kicker">Step 2 · The calendar</p>
@@ -60,7 +76,7 @@
   </section>
 
   <!-- ============ 4 · estimated payments ============ -->
-  <section class="dossier">
+  <section class="dossier" id="sec-estimate">
     <div class="dossier-head">
       <div>
         <p class="kicker">Tool · Estimated payments</p>
@@ -111,7 +127,7 @@
   </section>
 
   <!-- ============ 2b · deductions ============ -->
-  <section class="dossier">
+  <section class="dossier" id="sec-deductions">
     <div class="dossier-head">
       <div>
         <p class="kicker">Tool · Deductions</p>
@@ -131,7 +147,7 @@
   </section>
 
   <!-- ============ 3 · the vault ============ -->
-  <section class="dossier">
+  <section class="dossier" id="sec-vault">
     <div class="dossier-head">
       <div>
         <p class="kicker">Step 3 · Document vault</p>

@@ -116,15 +116,15 @@ NODEEOF
 
 # new UI wiring: search, missing-only, export, ics, calculator controls exist + are wired
 missingIds=""
-for id in docSearch missingOnly exportBtn icsBtn w2Inc seInc calcBtn calcOut; do
+for id in docSearch missingOnly exportBtn icsBtn w2Inc seInc calcBtn calcOut ticker tickerLabel tickerNum tickerDl stepVault; do
   grep -q "id=\"$id\"" index.html || missingIds="$missingIds $id"
 done
-[ -z "$missingIds" ] && ok "index.html has search/filter/export/ics/calculator controls" || bad "index.html missing:$missingIds"
+[ -z "$missingIds" ] && ok "index.html has search/filter/export/ics/calculator/ticker/stepper controls" || bad "index.html missing:$missingIds"
 missing=""
-for needle in filterDocs checklistText estimateQuarterly deadlinesICS exportPacket downloadICS calcQuarterly; do
+for needle in filterDocs checklistText estimateQuarterly deadlinesICS exportPacket downloadICS calcQuarterly updateTicker estimateRefund; do
   grep -q "$needle" js/app.js || grep -q "$needle" js/tax.js || missing="$missing $needle"
 done
-[ -z "$missing" ] && ok "app.js/tax.js wire all 5 new features" || bad "missing wiring:$missing"
+[ -z "$missing" ] && ok "app.js/tax.js wire all features incl. live ticker" || bad "missing wiring:$missing"
 
 missing2=""
 for needle in FILING_STATUSES deductionComparison yearKey filingStatus renderDeductions yearSel dedAddBtn; do
