@@ -291,7 +291,8 @@
 
   function calcQuarterly() {
     var out = el('calcOut');
-    var st = filingStatus();
+    var st = el('filingStatus').value;
+    if (!T.FILING_STATUSES[st]) st = 'single';
     save(LS_FILE, st);
     var r = T.estimateQuarterly(el('w2Inc').value, el('seInc').value, st);
     var rf = T.estimateRefund(el('w2Inc').value, el('seInc').value, st,
